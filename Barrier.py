@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.sparse as sp
 
 class Barrier:
 
@@ -58,7 +59,30 @@ class LogBar(Barrier):
                 return False
         return True
 
+class LinLogBar(Barrier):
+
+    def __init__(self, a, b):
+        super().__init__(len(a))
+        self.a = a
+        self.b = b
     
+    def f(self, x):
+        return self.a@x-self.b
+    def logf(self, x):
+        return -np.log(self.f(x))
+    def grad(self, x):
+        try:
+            return -1/(self.a.dot(x)-self.b)
+        except:
+            return sp.csc_matrix(x.shape)
+        
+    def hess(self, x):
+        return 1/(self.a.dot(x)-self.b)**2*self.a@self.a.T
+    def isFeasible(self, x):
+        return self.f(x) <=0
+
+
+
 class QuadBar(Barrier):
 
     def __init__(self, n, A, B):
@@ -102,7 +126,7 @@ class BarrSum(Barrier):
         return ans
     
     def hess(self, x):
-        ans = np.zeros((self.n, self.n))
+        ans = sp.csc_matrix((self.n, self.n))
         for func in self.fls:
             ans += func.hess(x)
         return ans

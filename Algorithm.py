@@ -198,7 +198,7 @@ class IPM(Algorithm):
     def setEta(self, eta):
         self.eta = eta
 
-    def damped(self, isdamped):
+    def setdamped(self, isdamped):
         self.damped = isdamped
 
     def update(self, prob):

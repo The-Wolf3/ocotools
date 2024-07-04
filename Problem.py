@@ -1,5 +1,6 @@
 import numpy as np
 import cvxpy as cp
+from Barrier import *
 
 class Problem:
 
@@ -42,6 +43,73 @@ class LinConsProblem(Problem):
     def violation(self, x):
         return np.linalg.norm(self.A@x-self.b.T)
 
+class LinearProgram(LinConsProblem):
+
+    def __init__(self, n=1, A=None, b=None, C=None, d=None, c=None):
+        super().__init__(self, n)
+        if A is not None: self.setA(A) 
+        if b is not None: self.setb(b) 
+        self.C = np.zeros((0, n)) if C is None else C
+        self.d = np.zeros((0, 1)) if d is None else d
+        self.c = np.zeros((1, n)) if c is None else c
+    
+
+    def getC(self):
+        return self.C
+    def getd(self):
+        return self.d
+    def getc(self):
+        return self.C
+    def setC(self, C):
+        self.C = C
+    def setc(self, c):
+        self.c = c
+    def setd(self, d):
+        self.d = d
+
+    def violation(self, x):
+        return super().violation(x)+np.linalg.norm(np.max(self.C@x-self.d.T, 0))
+    
+    def loss(self, x):
+        return self.c@x
+    
+    def grad(self, x):
+        return self.c
+    
+    def getH(self, x):
+        return np.zeros((self.n, self.n))
+    
+    def optimal(self):
+        prob, x = self.optProblem()
+        prob.solve()
+        return prob.value, x.value
+    
+    def optProblem(self):
+        x = cp.Variable((self.n, 1))
+        obj = cp.Minimize(self.c@x)
+        constraints = [self.A@x==self.b.T, self.C@x <= self.d.T]
+        prob = cp.Problem(obj, constraints)
+        return prob, x
+
+class OCOMPC(LinearProgram):
+
+    def __init__(self, n=1, A=None, b=None, C=None, d=None, c=None):
+        super().__init__(self, n, A, b, C, d, c)
+
+    def setBarrier(self):
+        self.barr = BarrSum(self.n)
+        for col in range(self.C.shape[0]):
+            self.barr += LinLogBar(self.C[col], self.d[col])
+
+    def barGradHess(self, x):
+        return self.barr.grad(x) + self.barr.hess(x)
+
+    
+    
+        
+
+           
+
 def sigmoid(x):
     return 1/(1+np.e**-(x))
 
@@ -50,6 +118,8 @@ def sigmoidGrad(x):
 
 def sigmoidHess(x):
     return np.e**(-x)*(2*np.e**(-x)*sigmoid(x)**3)-sigmoidGrad(x)
+
+
 
 class NetFlow(LinConsProblem):
 
