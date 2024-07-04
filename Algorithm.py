@@ -1,5 +1,6 @@
 import numpy as np
 import cvxpy as cp
+import scipy.sparse as sp
 
 from ocotools.Problem import ConvNetFlow, ExpNetFlow
 
@@ -7,7 +8,7 @@ class Algorithm:
 
     def __init__(self, n):
         self.n = n
-        self.x = np.zeros((n,1))
+        self.x = sp.csr_array((n,1))
         self.name = ""
 
     def __str__(self):
@@ -204,19 +205,25 @@ class IPM(Algorithm):
     def update(self, prob):
         A = prob.getA()
         b = prob.getb()
-        grad, H = prob.gradHess(self.x)
-        D = np.vstack((np.hstack((H, np.transpose(A))), 
-                np.hstack((A, np.zeros((A.shape[0], A.shape[0]))))))
-        grad[-1] += self.eta
-        augGrad = np.vstack((grad, np.round(A@self.x-b, 8)))
-        delta = np.linalg.solve(D, augGrad)
-        norm = augGrad.T@delta
+        grad, H = prob.barrGradHess(self.x)
+        D = sp.block_array([[H, A.T],[A, None]]) 
+        grad += prob.grad(self.x)*self.eta
+        viol = A.dot(self.x)-b
+        viol.data = np.round(viol.data, 8)
+        augGrad = sp.vstack((grad, viol))
+        delta = sp.linalg.spsolve(D, augGrad)
+        norm = augGrad.T.dot(delta)
         if norm > 1 and self.damped:
             delta = delta/norm
-        print(norm)
+        #print(norm)
         self.x -= delta[:self.n]
         self.lamda = delta[self.n:]
         return self.x
+    
+    def etaUpdate(self, prob, beta=1.02):
+        self.update(prob)
+        self.eta *= beta
+        return self.update(prob)
     
 class IPMDamped(IPM):
 

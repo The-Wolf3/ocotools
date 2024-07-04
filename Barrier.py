@@ -74,7 +74,7 @@ class LinLogBar(Barrier):
         try:
             return -1/(self.a.dot(x)-self.b)
         except:
-            return sp.csc_matrix(x.shape)
+            return sp.csr_array(x.shape)
         
     def hess(self, x):
         return 1/(self.a.dot(x)-self.b)**2*self.a@self.a.T
@@ -126,7 +126,7 @@ class BarrSum(Barrier):
         return ans
     
     def hess(self, x):
-        ans = sp.csc_matrix((self.n, self.n))
+        ans = sp.csr_array((self.n, self.n))
         for func in self.fls:
             ans += func.hess(x)
         return ans

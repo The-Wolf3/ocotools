@@ -101,7 +101,7 @@ class OCOMPC(LinearProgram):
         for col in range(self.C.shape[0]):
             self.barr += LinLogBar(self.C[col], self.d[col])
 
-    def barGradHess(self, x):
+    def barrGradHess(self, x):
         return self.barr.grad(x) + self.barr.hess(x)
 
     
