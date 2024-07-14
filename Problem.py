@@ -95,6 +95,7 @@ class OCOMPC(LinearProgram):
 
     def __init__(self, n=1, A=None, b=None, C=None, d=None, c=None):
         super().__init__(self, n, A, b, C, d, c)
+        self.setBarrier()
 
     def setBarrier(self):
         self.barr = BarrSum(self.n)
@@ -102,7 +103,7 @@ class OCOMPC(LinearProgram):
             self.barr += LinLogBar(self.C[col], self.d[col])
 
     def barrGradHess(self, x):
-        return self.barr.grad(x) + self.barr.hess(x)
+        return self.barr.grad(x), self.barr.hess(x)
 
     
     
