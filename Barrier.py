@@ -132,12 +132,16 @@ class BarrSum(Barrier):
         return ans
 
     def __iadd__(self, other):
-        if other.n == self.n:
-            if isinstance(other, BarrSum):
-                for func in other.fls:
-                    self.fls.append(func)
-            else:
-                self.fls.append(other)
+        if isinstance(other, Barrier):
+            if other.n == self.n:
+                if isinstance(other, BarrSum):
+                    for func in other.fls:
+                        self.fls.append(func)
+                else:
+                    self.fls.append(other)
+            return self
+        else:
+            raise TypeError('Cannot add a non-Barrier function')
 
     def __add__(self, other):
         if other.n == self.n:
